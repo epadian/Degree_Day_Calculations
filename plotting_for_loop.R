@@ -96,9 +96,10 @@ DD_S <- function(Low_Temp , High_Temp) {
 # Open files
 WRF_WY2016 <- nc_open("WRF-NARR-1km-WY2016.nc")
 WRF_WY2017 <- nc_open("WRF-NARR-1km-WY2017.nc")
-i <- 1
+i <- 2                          # Create an index for the for loop below
+DD_sum <- data.frame(DOY=1:365) # Create an empty data frame for for loop below
 
-for(lo in 100:130) {
+for(lo in seq(from=1, to=300, by=50)) {
     # Extract the max values, and extract for multiple locations
     tmax_16 <- ncvar_get(WRF_WY2016, "TMAX")
     tmax_16 <- tmax_16[lo,105, ]
@@ -145,26 +146,46 @@ for(lo in 100:130) {
     
     # Create Degree Day Calculations, sum, and plot - 2016
     DD <- DD_Calculation_2files(min_2016, max_2016)
-    DD_sum[,i]<- data.frame(cumsum(DD))
+    DD_sum[i] <- data.frame(cumsum(DD))
+       # Starting i = 1 will replace the first column, or if you
+       # start at i = 2, you can preserve a column to name "day of year"
     i <- i+1
 }
 
 # Create a matrix with the day of year when 261 DDs is met.
 
-for(n in 1:length(DD_sum)){
+first_egg_laying <- numeric(0)
+peak_adult_emerge <- numeric(0)
+fifth_egg_laying <- numeric(0)
+
+for(n in 2:length(DD_sum)){
     #261 - 1st egg laying by ow females
- first_egg_laying[n] <- as.numeric(as.data.frame(which(DD_sum[,n]>=261))[1,1])
+ first_egg_laying[n] <- as.numeric(as.data.frame(which(DD_sum[n]>=261))[1,1])
     #755 - peak adult emerge
- peak_adult_emerge[n] <- as.numeric(as.data.frame(which(DD_sum[,n]>=755))[1,1])
+ peak_adult_emerge[n] <- as.numeric(as.data.frame(which(DD_sum[n]>=755))[1,1])
     #2971 - 5th gen egg laying
- fifth_egg_laying[n] <- as.numeric(as.data.frame(which(DD_sum[,n]>=2971))[1,1])
+ fifth_egg_laying[n] <- as.numeric(as.data.frame(which(DD_sum[n]>=2971))[1,1])
+}
+
+#######YAAASSSS A LOOP TO PLOT!!!!
+
+c <- 25
+x <- data.frame(1:365) 
+
+for (i in 2:length(DD_sum)) {
+  y <- DD_sum[i]
+  data <- cbind(x,y)
+  plot(data, pch="*", col=c)
+  par(new=TRUE)
+  c <- c+25
 }
 
 
-x <- data.frame(1:365)    
-ggplot(DD_sum, aes(x = x$X1.365)) +
-  geom_line(aes(y= DD_sum[,1]))+
-  geom_line(aes(y= DD_sum[,2]))+
-  geom_line(aes(y= DD_sum[,3]))
+
+#x <- data.frame(1:365)    
+#ggplot(DD_sum, aes(x = x$X1.365)) +
+# geom_line(aes(y= DD_sum[,2]))+
+#  geom_line(aes(y= DD_sum[,3]))+
+#  geom_line(aes(y= DD_sum[,4]))
 
 
